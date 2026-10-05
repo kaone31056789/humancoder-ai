@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HumanCoder Local Test Page</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b0f14; --panel: #11161d; --border: #252d38; --text: #e6edf3; --muted: #8b98a8;
+        --accent: #3ddc84; --danger: #f87171; --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 system-ui, sans-serif; }
+      main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 80px; display: grid; gap: 18px; }
+      h1 { font: 700 16px var(--mono); letter-spacing: .14em; margin: 0; }
+      h2 { font: 600 13px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+      section { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+      @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+      textarea, .ce { width: 100%; min-height: 220px; background: #0d1117; color: var(--text); border: 1px solid var(--border);
+        border-radius: 8px; padding: 10px; font: 13px/1.55 var(--mono); tab-size: 4; outline: none; }
+      textarea:focus, .ce:focus, .sim:focus-within { border-color: var(--accent); }
+      .ce { white-space: pre-wrap; overflow: auto; }
+      .toolbar { display: flex; gap: 8px; align-items: center; margin-top: 8px; color: var(--muted); font-size: 12px; }
+      button { font: inherit; color: var(--text); background: #161c24; border: 1px solid #334050; border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+      .sim { display: grid; grid-template-columns: auto 1fr; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: #0d1117; }
+      .gutter { padding: 10px 8px; text-align: right; color: #5b6776; font: 13px/1.55 var(--mono); background: #0a0d12; user-select: none; white-space: pre; }
+      .sim textarea { border: 0; border-radius: 0; min-height: 300px; resize: vertical; white-space: pre; overflow-wrap: normal; overflow-x: auto; }
+      .error-output { margin-top: 10px; font: 12.5px/1.5 var(--mono); border-radius: 8px; padding: 8px 10px; border: 1px solid #5a2a2e; background: #241214; color: #fecaca; white-space: pre-wrap; }
+      .error-output:empty { display: none; }
+      .ok-output { margin-top: 10px; font: 12.5px var(--mono); color: var(--accent); }
+      .problem-statement p, .problem-statement li { color: #c9d1d9; }
+      .checklist li { margin: 4px 0; color: var(--muted); }
+      kbd { font: 12px var(--mono); border: 1px solid #334050; border-radius: 4px; padding: 0 5px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>HUMANCODER · LOCAL TEST PAGE</h1>
+
+      <section class="problem-statement">
+        <h2>Problem: Sum of two integers</h2>
+        <p>Read two integers <code>a</code> and <code>b</code> from standard input and print their sum. Constraints: −10⁹ ≤ a, b ≤ 10⁹, so use a
+          64-bit type. Print a newline after the answer.</p>
+        <ul class="checklist">
+          <li>Type mode: paste code in the popup, click into an editor below, then <b>Start Writing</b>.</li>
+          <li>Agent mode: e.g. task “Fix the compile errors” on the simulated editor (its linter shows errors below it).</li>
+          <li>Pause/stop with the in-page HUD, the popup, or <kbd>Alt+Shift+P</kbd> / <kbd>Alt+Shift+X</kbd>.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Simulated code editor (textarea + gutter + live linter)</h2>
+        <div class="sim">
+          <div class="gutter" id="gutter">1</div>
+          <textarea id="sim" spellcheck="false" aria-label="Simulated code editor"></textarea>
+        </div>
+        <div class="error-output" id="sim-errors" role="alert"></div>
+        <div class="ok-output" id="sim-ok"></div>
+        <div class="toolbar">
+          <button data-reset="sim">Load buggy sample</button>
+          <button data-clear="sim">Clear</button>
+          <span id="sim-stats"></span>
+        </div>
+      </section>
+
+      <div class="grid">
+        <section>
+          <h2>Plain textarea</h2>
+          <textarea id="plain" spellcheck="false" aria-label="Plain textarea"></textarea>
+          <div class="toolbar"><button data-clear="plain">Clear</button><span id="plain-stats"></span></div>
+        </section>
+        <section>
+          <h2>Contenteditable editor</h2>
+          <div id="ce" class="ce" contenteditable="true" spellcheck="false" aria-label="Contenteditable editor"></div>
+          <div class="toolbar"><button data-clear="ce">Clear</button><span id="ce-stats"></span></div>
+        </section>
+      </div>
+
+      <section>
+        <h2>Event log (input events received by the page)</h2>
+        <div id="events" style="font: 12px var(--mono); color: var(--muted); max-height: 140px; overflow: auto"></div>
+      </section>
+    </main>
+
+    <script>
+      const BUGGY = [
+        '#include <iostream>',
+        'using namespace std;',
+        '',
+        'int main() {',
+        '    long long a, b',
+        '    cin >> a >> b;',
+        '    cout << a + b << endl',
+        '    return 0;',
+        '}',
+        '',
+      ].join('\n');
+
+      const $ = (id) => document.getElementById(id);
+      const sim = $('sim');
+
+      // Tiny C++-ish linter: unbalanced brackets and statements missing a semicolon.
+      function lint(code) {
+        const errors = [];
+        const stack = [];
+        const pairs = { ')': '(', ']': '[', '}': '{' };
+        code.split('\n').forEach((line, i) => {
+          const n = i + 1;
+          const stripped = line.replace(/\/\/.*$/, '').replace(/"(?:\\.|[^"\\])*"/g, '""').replace(/'(?:\\.|[^'\\])*'/g, "''");
+          for (const ch of stripped) {
+            if ('([{'.includes(ch)) stack.push({ ch, n });
+            else if (')]}'.includes(ch)) {
+              const top = stack.pop();
+              if (!top || top.ch !== pairs[ch]) errors.push(`line ${n}: error: unexpected '${ch}'`);
+            }
+          }
+          const t = stripped.trim();
+          if (!t || t.startsWith('#') || /[;{}:,]$/.test(t) || /^(if|for|while|else|switch|do)\b/.test(t) || /\)$/.test(t) && /^(int|void|long|auto|bool)\s+\w+\s*\(/.test(t)) return;
+          if (/^(using|return|cin|cout|int|long|double|auto|bool|char|string|std::)/.test(t) || /[\w\])]$/.test(t)) {
+            errors.push(`line ${n}: error: expected ';' at end of statement`);
+          }
+        });
+        for (const open of stack) errors.push(`line ${open.n}: error: '${open.ch}' was never closed`);
+        return errors;
+      }
+
+      function refreshSim() {
+        const code = sim.value;
+        const lines = code.split('\n').length;
+        $('gutter').textContent = Array.from({ length: lines }, (_, i) => i + 1).join('\n');
+        const errors = code.trim() ? lint(code) : [];
+        $('sim-errors').textContent = errors.length ? 'Compilation failed:\n' + errors.join('\n') : '';
+        $('sim-ok').textContent = code.trim() && !errors.length ? '✓ Compiled successfully' : '';
+        $('sim-stats').textContent = `${lines} lines · ${code.length} chars`;
+      }
+      sim.addEventListener('input', refreshSim);
+      sim.addEventListener('scroll', () => ($('gutter').scrollTop = sim.scrollTop));
+      // Like real editors, Tab inserts spaces instead of moving focus (for manual testing).
+      sim.addEventListener('keydown', (e) => {
+        if (e.key === 'Tab' && e.isTrusted) {
+          e.preventDefault();
+          document.execCommand('insertText', false, '    ');
+        }
+      });
+
+      const stats = (id, getText) => {
+        const el = $(id);
+        const update = () => ($(id + '-stats').textContent = `${getText(el).length} chars`);
+        el.addEventListener('input', update);
+        update();
+      };
+      stats('plain', (el) => el.value);
+      stats('ce', (el) => el.innerText);
+
+      let eventCount = 0;
+      document.addEventListener('input', (e) => {
+        const line = document.createElement('div');
+        line.textContent = `${++eventCount} ${e.target.id || e.target.tagName} ${e.inputType || 'input'} ${e.data != null ? JSON.stringify(e.data) : ''}`;
+        const log = $('events');
+        log.appendChild(line);
+        if (log.children.length > 200) log.firstChild.remove();
+        log.scrollTop = log.scrollHeight;
+      }, true);
+
+      document.querySelectorAll('[data-reset]').forEach((b) => b.addEventListener('click', () => { sim.value = BUGGY; refreshSim(); }));
+      document.querySelectorAll('[data-clear]').forEach((b) => b.addEventListener('click', () => {
+        const el = $(b.dataset.clear);
+        if ('value' in el) el.value = ''; else el.innerHTML = '';
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+      }));
+
+      sim.value = BUGGY;
+      refreshSim();
+    </script>
+  </body>
+</html>

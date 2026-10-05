@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HumanCoder Editor Adapters Test</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css" />
+    <style>
+      :root { color-scheme: dark; --border: #252d38; --muted: #8b98a8; --mono: ui-monospace, Consolas, monospace; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #0b0f14; color: #e6edf3; font: 14px/1.5 system-ui, sans-serif; }
+      main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 80px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+      @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+      header { max-width: 1200px; margin: 0 auto; padding: 24px 16px 0; }
+      h1 { font: 700 16px var(--mono); letter-spacing: .14em; margin: 0 0 6px; }
+      header p { margin: 0; color: var(--muted); }
+      section { background: #11161d; border: 1px solid var(--border); border-radius: 10px; padding: 12px; min-width: 0; }
+      h2 { font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; display: flex; justify-content: space-between; }
+      .host { height: 260px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+      .CodeMirror { height: 260px; font: 13px/1.5 var(--mono); }
+      .cm6 .cm-editor { height: 260px; background: #0d1117; }
+      .cm6 .cm-scroller { font: 13px/1.5 var(--mono); }
+      .state { font: 11px var(--mono); color: #f87171; }
+      .state.ok { color: #3ddc84; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>HUMANCODER · EDITOR ADAPTERS</h1>
+      <p>Each editor below is a real library loaded from a CDN. Click into one, open the popup, and use “Detect” / “Start Writing”.</p>
+    </header>
+    <main>
+      <section><h2>Monaco <span class="state" id="s-monaco">loading…</span></h2><div class="host" id="monaco"></div></section>
+      <section><h2>CodeMirror 6 <span class="state" id="s-cm6">loading…</span></h2><div class="host cm6" id="cm6"></div></section>
+      <section><h2>CodeMirror 5 <span class="state" id="s-cm5">loading…</span></h2><div class="host" id="cm5"></div></section>
+      <section><h2>Ace <span class="state" id="s-ace">loading…</span></h2><div class="host" id="ace"></div></section>
+      <section class="explain-form" style="grid-column: 1 / -1">
+        <h2>Explain your code <span style="text-transform:none;letter-spacing:0">(mock of a site's explanation form)</span></h2>
+        <p style="margin:0 0 8px;color:var(--muted)">Highlight parts of code you want to annotate</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#3b2f22;padding:8px;border-radius:6px 6px 0 0">
+          <label>Explanation type <select id="ex-type"><option>Observation</option><option>Approach</option><option>Complexity</option></select></label>
+          <label>Lines from <input id="ex-from" type="number" value="1" style="width:60px" /></label>
+          <label>Lines to <input id="ex-to" type="number" value="1" style="width:60px" /></label>
+        </div>
+        <textarea id="ex-text" placeholder="Add your explanation here (markdown is supported)"
+          style="width:100%;min-height:140px;background:#0d1117;color:#e6edf3;border:1px solid var(--border);border-radius:0 0 6px 6px;padding:8px;font:13px/1.5 system-ui"></textarea>
+      </section>
+    </main>
+
+    <script>
+      const SAMPLE = '#include <iostream>\nusing namespace std;\n\nint main() {\n    int a, b;\n    cin >> a >> b;\n    // TODO: print the sum\n    return 0;\n}\n';
+      const ready = (id) => { const el = document.getElementById('s-' + id); el.textContent = 'ready'; el.classList.add('ok'); };
+      const failed = (id, e) => { document.getElementById('s-' + id).textContent = 'failed: ' + (e && e.message || e); };
+    </script>
+
+    <!-- CodeMirror 5 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+    <script>
+      try {
+        CodeMirror(document.getElementById('cm5'), { value: SAMPLE, mode: 'text/x-c++src', theme: 'material-darker', lineNumbers: true, indentUnit: 4 });
+        ready('cm5');
+      } catch (e) { failed('cm5', e); }
+    </script>
+
+    <!-- Ace -->
+    <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.32.9/src-min-noconflict/ace.js"></script>
+    <script>
+      try {
+        ace.config.set('basePath', 'https://cdn.jsdelivr.net/npm/ace-builds@1.32.9/src-min-noconflict/');
+        const ed = ace.edit('ace', { value: SAMPLE, mode: 'ace/mode/c_cpp', theme: 'ace/theme/tomorrow_night', fontSize: 13 });
+        ed.session.setTabSize(4);
+        ready('ace');
+      } catch (e) { failed('ace', e); }
+    </script>
+
+    <!-- CodeMirror 6 (ES modules from esm.sh) -->
+    <script type="module">
+      try {
+        const { EditorView, basicSetup } = await import('https://esm.sh/codemirror@6.0.1');
+        new EditorView({ doc: SAMPLE, extensions: [basicSetup, EditorView.theme({}, { dark: true })], parent: document.getElementById('cm6') });
+        ready('cm6');
+      } catch (e) { failed('cm6', e); }
+    </script>
+
+    <!-- Monaco (AMD build exposes window.monaco). Loaded last: its AMD loader defines a global
+         `define`, which would make the UMD builds of CodeMirror 5 / Ace register as AMD modules. -->
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
+    <script>
+      (function () {
+        const base = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/';
+        window.MonacoEnvironment = {
+          getWorkerUrl: () =>
+            'data:text/javascript;charset=utf-8,' +
+            encodeURIComponent(`self.MonacoEnvironment={baseUrl:'${base}'};importScripts('${base}vs/base/worker/workerMain.js');`),
+        };
+        try {
+          require.config({ paths: { vs: base + 'vs' } });
+          require(['vs/editor/editor.main'], () => {
+            monaco.editor.create(document.getElementById('monaco'), { value: SAMPLE, language: 'cpp', theme: 'vs-dark', minimap: { enabled: false }, automaticLayout: true });
+            ready('monaco');
+          }, (e) => failed('monaco', e));
+        } catch (e) { failed('monaco', e); }
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,36 @@
+HumanCoder AI - install instructions
+====================================
+
+1. Unzip this file. You get a folder called "HumanCoder-AI".
+   Keep it somewhere permanent (e.g. Documents) - Chrome loads it from there,
+   so don't delete or move it after installing.
+2. Open Chrome and go to:  chrome://extensions
+3. Turn on "Developer mode" (toggle, top right).
+4. Click "Load unpacked" and select the "HumanCoder-AI" folder
+   (the one that contains manifest.json).
+5. The Settings page opens. Paste your own OpenRouter API key
+   (get one at https://openrouter.ai/keys), click Test, then Save.
+   The Type tab works without a key; the AI tabs need one.
+6. Pin the extension (puzzle-piece icon in the Chrome toolbar).
+
+How to use
+----------
+Click into the code editor on a web page, open the popup, pick a tab,
+and press its big button:
+
+- Type     - types the code you paste, keystroke by keystroke.
+- AI Task  - describe a change; the AI edits the editor and checks its work.
+- Review   - finds problems; tick the ones to fix, then "Fix in editor"
+             or "Fix pasted code".
+- Explain  - pick a type (Algorithm, Observation, Approach, Step-by-step,
+             Complexity, Edge cases) and optionally a line range. Then write
+             it into a text box on the page or as comments in the code.
+
+Language, AI model and typing speed are under "Options" in the popup.
+You can switch to another tab while it types - it keeps going.
+Pause/Stop: the popup, the small panel bottom-right on the page,
+or Alt+Shift+P (pause/resume) / Alt+Shift+X (stop).
+If the page reloads, open the popup again before starting.
+
+Updating to a new version: replace the folder's contents with the new ones,
+then click the reload icon on the extension's card in chrome://extensions.
